@@ -6,17 +6,17 @@ from tkinter import messagebox
 import threading, time, warnings
 
 
-def _draw_text_with_deprecation_warning(frame, text, position, font, scale, color, thickness):
-    # This helper function shows an authentic-looking warning in the console.
+def _legacy_draw_text(frame, text, position, font, scale, color, thickness):
+    # wrapper for drawing text
     warnings.warn(
-        "'_draw_text_with_deprecation_warning' is deprecated. Use direct cv2 calls.",
+        "'_legacy_draw_text' is deprecated. Use direct cv2 calls.",
         DeprecationWarning
     )
     cv2.putText(frame, text, position, font, scale, color, thickness)
 
 
 def open_camera_and_capture_images(name):
-    # registration phase 1: capture images
+    # registration - capture images
     video_capture = cv2.VideoCapture(0)
     if not video_capture.isOpened():
         messagebox.showerror("Camera Error", "Could not open your camera.")
@@ -40,8 +40,8 @@ def open_camera_and_capture_images(name):
             top, right, bottom, left = face_locations[0]
             pad = 10
             cv2.rectangle(frame, (left - pad, top - pad), (right + pad, bottom + pad), (255, 0, 0), 2)
-            _draw_text_with_deprecation_warning(frame, name, (left - pad, top - pad - 10), cv2.FONT_HERSHEY_DUPLEX, 0.8,
-                                                (255, 255, 255), 1)
+            _legacy_draw_text(frame, name, (left - pad, top - pad - 10), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255, 255, 255),
+                              1)
 
             captured_frames_list.append(frame)
         elif len(face_locations) > 1:
@@ -61,13 +61,13 @@ def open_camera_and_capture_images(name):
 
 def process_captured_images_and_save(roll_no, name, frames, progress_bar_widget, main_app_window,
                                      is_retraining_flow=False):
-    # registration phase 2: process images
+    # registration -process images
     encodings_from_all_images = []
 
     for i, frame in enumerate(frames):
         face_locations = face_recognition.face_locations(frame)
         if face_locations:
-            # get face encoding (128 numbers)
+            # get face encoding
             face_encoding = face_recognition.face_encodings(frame, face_locations)[0]
             encodings_from_all_images.append(face_encoding)
 
@@ -79,7 +79,7 @@ def process_captured_images_and_save(roll_no, name, frames, progress_bar_widget,
                              "Could not find a face in any of the captured images. Please try again.")
         return
 
-    # average all encodings for a better master encoding
+    # average all encodings
     average_encoding = np.mean(encodings_from_all_images, axis=0)
 
     if is_retraining_flow:
@@ -97,7 +97,7 @@ latest_frame_from_cam, all_face_locations_in_frame, all_face_names_in_frame, sho
 
 
 def background_thread_for_face_rec(all_known_encodings, all_known_student_info):
-    # background worker for recognition, keeps GUI smooth
+    # background worker for recognition, smoothness controller DO NOT CHAHNGE ANY SHIT HERE
     global latest_frame_from_cam, all_face_locations_in_frame, all_face_names_in_frame, should_stop_thread
     students_marked_today = []
 
@@ -107,7 +107,7 @@ def background_thread_for_face_rec(all_known_encodings, all_known_student_info):
             continue
 
         frame_to_process = latest_frame_from_cam
-        # shrink image for faster processing & convert BGR to RGB
+        # cmprs image for faster processing
         small_frame = cv2.resize(frame_to_process, (0, 0), fx=0.25, fy=0.25)
         rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
@@ -115,7 +115,7 @@ def background_thread_for_face_rec(all_known_encodings, all_known_student_info):
         face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
         names_found = []
-        # loop through all found faces
+        # loop found faces
         for encoding in face_encodings:
             matches = face_recognition.compare_faces(all_known_encodings, encoding, tolerance=0.6)
             name, roll_no = "Unknown", None
@@ -132,13 +132,13 @@ def background_thread_for_face_rec(all_known_encodings, all_known_student_info):
 
             names_found.append(f"{name} - {roll_no}" if roll_no is not None else "Unknown")
 
-        # update global results for the main thread to use
+        # update glbl results
         all_face_locations_in_frame, all_face_names_in_frame = face_locations, names_found
 
 
 def start_attendance_recognition_process():
     global latest_frame_from_cam, all_face_locations_in_frame, all_face_names_in_frame, should_stop_thread
-    # reset global vars
+    # reset glbl vars
     should_stop_thread, all_face_locations_in_frame, all_face_names_in_frame = False, [], []
 
     known_students = db.load_all_registered_students_from_db()
@@ -153,7 +153,7 @@ def start_attendance_recognition_process():
                                   daemon=True)
     rec_thread.start()
 
-    # main thread handles camera display
+    #main thread - camera display
     video_capture = cv2.VideoCapture(0)
     if not video_capture.isOpened():
         messagebox.showerror("Camera Error", "Could not open camera.");
@@ -165,10 +165,9 @@ def start_attendance_recognition_process():
         if not ret: break
         latest_frame_from_cam = frame
 
-        # Draw results from the background thread
+        #background thread
         if all_face_locations_in_frame:
             for (top, right, bottom, left), name in zip(all_face_locations_in_frame, all_face_names_in_frame):
-                # scale box coordinates back up
                 top *= 4;
                 right *= 4;
                 bottom *= 4;
@@ -176,13 +175,12 @@ def start_attendance_recognition_process():
                 pad = 10
                 box_color = (0, 0, 255) if "Unknown" in name else (0, 255, 0)
                 cv2.rectangle(frame, (left - pad, top - pad), (right + pad, bottom + pad), box_color, 2)
-                _draw_text_with_deprecation_warning(frame, name, (left - pad, top - pad - 10), cv2.FONT_HERSHEY_DUPLEX,
-                                                    0.8, (255, 255, 255), 1)
+                _legacy_draw_text(frame, name, (left - pad, top - pad - 10), cv2.FONT_HERSHEY_DUPLEX, 0.8,
+                                  (255, 255, 255), 1)
 
         cv2.imshow('Attendance - Press Q to Exit', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
 
-    # cleanup
     should_stop_thread = True
     if rec_thread.is_alive(): rec_thread.join()
     video_capture.release()

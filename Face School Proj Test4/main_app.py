@@ -50,7 +50,7 @@ class AttendanceAppGUI(ctk.CTk):
         path_label.place(relx=0.01, rely=0.98, anchor="sw")
 
     def make_window_appear_in_center(self, pop_up_window=None):
-        # center window function
+        #center window function
         target_window = pop_up_window if pop_up_window is not None else self
         target_window.update_idletasks()
 
@@ -67,8 +67,8 @@ class AttendanceAppGUI(ctk.CTk):
         target_window.geometry(f'{width}x{height}+{x}+{y}')
 
     def new_student_button_clicked(self, retrain_data=None):
-        # register/retrain button action
-        is_retraining = retrain_data is not None  # check for retrain mode
+        #register/retrain button action
+        is_retraining = retrain_data is not None
 
         popup = ctk.CTkToplevel(self)
         popup.transient(self);
@@ -81,9 +81,9 @@ class AttendanceAppGUI(ctk.CTk):
         if is_retraining:
             roll_no, name = retrain_data
             roll_entry.insert(0, str(roll_no))
-            roll_entry.configure(state="disabled")  # disable roll_no for retrain
+            roll_entry.configure(state="disabled")
             name_entry.insert(0, name)
-            name_entry.configure(state="disabled")  # disable name for retrain
+            name_entry.configure(state="disabled")
 
         ctk.CTkLabel(popup, text="Student Roll Number:").pack(pady=(20, 5))
         roll_entry.pack(pady=5, padx=20, fill="x")
@@ -98,7 +98,7 @@ class AttendanceAppGUI(ctk.CTk):
         self.make_window_appear_in_center(popup)
 
     def start_the_capture_process(self, popup_window, roll_entry, name_entry, is_retraining=False):
-        # handle form submission
+        #form submission
         roll_no_text, name_text = roll_entry.get(), name_entry.get()
 
         if not roll_no_text or not name_text:
@@ -117,7 +117,7 @@ class AttendanceAppGUI(ctk.CTk):
                                                                   is_retraining)
 
     def show_the_processing_progress_bar(self, roll_no, name, frames, is_retraining=False):
-        # processing popup
+        #proces popup
         progress_popup = ctk.CTkToplevel(self)
         progress_popup.title("Working...");
         progress_popup.geometry("400x150")
@@ -144,7 +144,6 @@ class AttendanceAppGUI(ctk.CTk):
         manage_popup.transient(self);
         manage_popup.grab_set()
 
-        # resizable layout
         manage_popup.grid_columnconfigure(0, weight=1);
         manage_popup.grid_rowconfigure(0, weight=1)
         frame = ctk.CTkFrame(manage_popup)
@@ -156,7 +155,6 @@ class AttendanceAppGUI(ctk.CTk):
         student_table.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="nsew")
 
         def refresh_student_list():
-            # refresh list from db
             for item in student_table.get_children(): student_table.delete(item)
             for student in db.load_all_registered_students_from_db(): student_table.insert("", "end",
                                                                                            values=(student["roll_no"],
@@ -197,7 +195,7 @@ class AttendanceAppGUI(ctk.CTk):
         self.deiconify()
 
     def setup_the_table_style_and_columns(self, parent_container):
-        # table styling function
+        #table styke
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", background="#242424", foreground="white", rowheight=28, fieldbackground="#343638",
@@ -232,12 +230,9 @@ class AttendanceAppGUI(ctk.CTk):
         report_table.column("Time", anchor="center")
         report_table.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
 
-        # load data into table
         for record in db.fetch_full_attendance_report():
             report_table.insert("", "end", values=record)
 
-
-# start program
 if __name__ == "__main__":
     app = AttendanceAppGUI()
     app.mainloop()

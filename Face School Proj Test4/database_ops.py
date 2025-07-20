@@ -4,7 +4,7 @@ import pickle, warnings
 from datetime import datetime
 
 
-# functions to handle numpy arrays for db
+# functions fr numpy arrays fr db
 def adapt_array(arr):
     return pickle.dumps(arr)
 
@@ -12,8 +12,6 @@ def adapt_array(arr):
 def convert_array(text):
     return pickle.loads(text)
 
-
-# register the numpy array type with sqlite
 sqlite3.register_adapter(np.ndarray, adapt_array)
 sqlite3.register_converter("array", convert_array)
 
@@ -29,12 +27,12 @@ def get_connection_to_database(db_file="attendance.db"):
 
 
 def setup_database_tables_if_needed():
-    # setup tables at the start
+    #setup table
     conn = get_connection_to_database()
     if conn is not None:
         try:
             c = conn.cursor()
-            # create students table
+            #create std table
             c.execute("""CREATE TABLE IF NOT EXISTS students
                          (
                              roll_no
@@ -51,7 +49,7 @@ def setup_database_tables_if_needed():
                              NULL
                          );""")
 
-            # create attendance table. ON DELETE CASCADE automatically deletes attendance records
+            #create attend table
             c.execute("""CREATE TABLE IF NOT EXISTS attendance_records
             (
                 record_id
@@ -104,7 +102,7 @@ def save_new_student_to_db(roll_no, name, face_encoding):
         conn.commit()
         return True
     except sqlite3.Error:
-        # integrity error on duplicate roll_no
+        # integrity error chk
         return False
     finally:
         if conn:
@@ -112,7 +110,7 @@ def save_new_student_to_db(roll_no, name, face_encoding):
 
 
 def update_face_data_for_student(roll_no, face_encoding):
-    # update student's face data for retrain
+    #updt std face data
     conn = get_connection_to_database()
     sql = ''' UPDATE students \
               SET face_encoding = ? \
@@ -147,7 +145,7 @@ def delete_student_from_db(roll_no):
 
 
 def load_all_registered_students_from_db():
-    # load all students for recognition
+    #load std face recog
     conn = get_connection_to_database()
     students_data = []
     try:
@@ -170,18 +168,17 @@ def log_student_attendance(roll_no):
 
     try:
         c = conn.cursor()
-        # check for existing log today
         c.execute("SELECT * FROM attendance_records WHERE roll_no = ? AND attendance_date = ?",
                   (roll_no, today_date_str))
         if c.fetchone() is None:
-            # insert new record
+            #ins new record
             sql = ''' INSERT INTO attendance_records(roll_no, attendance_date, attendance_time) \
                       VALUES (?, ?, ?) '''
             c.execute(sql, (roll_no, today_date_str, current_time_str))
             conn.commit()
             return True
         else:
-            return False  # already marked
+            return False
     except sqlite3.Error as e:
         print(f"Error logging attendance: {e}")
     finally:
@@ -193,7 +190,7 @@ def fetch_full_attendance_report():
     conn = get_connection_to_database()
     try:
         c = conn.cursor()
-        # join with students table to get names
+        #join with std table -name
         sql = """SELECT ar.roll_no, s.name, ar.attendance_date, ar.attendance_time
                  FROM attendance_records ar \
                           JOIN students s ON ar.roll_no = s.roll_no
