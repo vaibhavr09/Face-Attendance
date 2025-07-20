@@ -7,7 +7,6 @@ import threading, time, warnings
 
 
 def _legacy_draw_text(frame, text, position, font, scale, color, thickness):
-    # wrapper for drawing text
     warnings.warn(
         "'_legacy_draw_text' is deprecated. Use direct cv2 calls.",
         DeprecationWarning
